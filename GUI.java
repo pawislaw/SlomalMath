@@ -1,4 +1,4 @@
-package projekt.v5;
+package pojava.projekt;
 
 
 import javax.swing.*;
