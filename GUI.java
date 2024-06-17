@@ -1,59 +1,67 @@
 package pojava.projekt;
 
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.EtchedBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 
-public class GUI extends JFrame implements ActionListener, ChangeListener {
+public class GUI extends JFrame implements ActionListener {
 
-    public static void main(String[] args) {
-        GUI gui = new GUI();
-        gui.setVisible(true);
-    }
-    
-    JPanel graphPanel;
+
+    InputFunctionDrawing graphPanel;
     JPanel inputPanel;
+    static JEditorPane fxTextField;
+    String inputFunction;
+    static String periodText;
     JPanel centerPanel;
     JPanel param1Panel;
     JPanel param2Panel;
     JPanel sliderPanel;
     JSlider slider;
     GradientPanel mainPanel;
-    JTextField fxTextField;
+    JButton plotButton;
     JTextField periodTextField;
     JTextField sliderTextField;
     JLabel fxLabel;
     JLabel periodLabel;
     JLabel seriesInput;
-    JLabel a0_label;
-    JLabel an_label;
-    JLabel bn_label;
+    static JLabel a0_label = new JLabel("a_0 = ");
+
     JMenuBar menuBar;
     JMenu fileMenu;
     JMenuItem exitMenuItem;
+    JMenuItem saveImageMenuItem;
     JMenuItem ChangeborderColor;
     JMenuItem gradient1;
     JMenuItem gradient2;
     JMenuItem saveDataMenuItem;
     JMenu colorsSubmenu;
-    Color gradientColor1;
+    static Color gradientColor1;
     Color gradientColor2;
     Color borderColor;
+    static int n;
 
     static final int SLIDER_MIN = 0;
     static final int SLIDER_MAX = 100;
     static final int SLIDER_INIT = 0;
 
+
     public GUI() throws HeadlessException {
         setTitle("SlomalMath");
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-        setSize(1000, 800);
-        graphPanel = new JPanel();
+        setSize(1200, 800);
+        inputFunction = "";
+        periodText = "";
+        graphPanel = new InputFunctionDrawing();
         mainPanel = new GradientPanel();
         mainPanel.setLayout(new BorderLayout());
 
@@ -70,6 +78,7 @@ public class GUI extends JFrame implements ActionListener, ChangeListener {
         menuBar.setBackground(gradientColor1);
         fileMenu = new JMenu("File");
         exitMenuItem = new JMenuItem("Exit");
+        saveDataMenuItem = new JMenuItem("Save Image");
         ChangeborderColor = new JMenuItem("Border Color");
         gradient1 = new JMenuItem("Gradient color 1");
         gradient2 = new JMenuItem("Gradient color 2");
@@ -83,48 +92,60 @@ public class GUI extends JFrame implements ActionListener, ChangeListener {
         fileMenu.add(exitMenuItem);
         menuBar.add(fileMenu);
         setJMenuBar(menuBar);
+        ActionListener saveImageListener = arg0 -> {
+            BufferedImage image = new BufferedImage(graphPanel.getWidth(), graphPanel.getHeight(), BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g2d = image.createGraphics();
+            graphPanel.paintAll(g2d);
 
+            JFileChooser fileChooser = new JFileChooser();
+            FileNameExtensionFilter filter = new FileNameExtensionFilter("PNG","JPEG","JPG");
+            fileChooser.addChoosableFileFilter(filter);
+            fileChooser.showSaveDialog(null);
 
-        ChangeborderColor.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                JColorChooser colorChooser = new JColorChooser();
-                Color borderColor = JColorChooser.showDialog(null, "Pick color", Color.white);
-                graphPanel.setBorder(BorderFactory.createLineBorder(borderColor, 6));
-                //problem przy resecie koloru sa errory
+            File outputfile = fileChooser.getSelectedFile();
+
+            //Zapis do pliku
+            try {
+                ImageIO.write(image, "png", outputfile);
+            } catch (IOException e) {
+                System.out.println(e.getMessage());
             }
+        };
+        saveDataMenuItem.addActionListener(saveImageListener);
+        fileMenu.add(saveDataMenuItem);
+
+        n=0;
+
+        ChangeborderColor.addActionListener(e -> {
+            JColorChooser colorChooser = new JColorChooser();
+            Color borderColor = JColorChooser.showDialog(null, "Pick color", Color.white);
+            graphPanel.setBorder(BorderFactory.createLineBorder(borderColor, 6));
         });
 
-        gradient1.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                JColorChooser colorChooser = new JColorChooser();
-                Color color = JColorChooser.showDialog(null, "Pick color", Color.white);
-                gradientColor1 = color;
-                menuBar.setBackground(gradientColor1);
-                repaint();
-            }
+        gradient1.addActionListener(e -> {
+            JColorChooser colorChooser = new JColorChooser();
+            Color color = JColorChooser.showDialog(null, "Pick color", Color.white);
+            gradientColor1 = color;
+            menuBar.setBackground(gradientColor1);
+            graphPanel.repaint();
+            repaint();
         });
 
-        gradient2.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                JColorChooser colorChooser = new JColorChooser();
-                Color color = JColorChooser.showDialog(null, "Pick color", Color.white);
-                gradientColor2 = color;
-                repaint();
-            }
+        gradient2.addActionListener(e -> {
+            JColorChooser colorChooser = new JColorChooser();
+            Color color = JColorChooser.showDialog(null, "Pick color", Color.white);
+            gradientColor2 = color;
+            repaint();
         });
-        exitMenuItem.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                System.exit(0);
-            }
-        });
+
 
         //slider i textfield do niego:
         slider = new JSlider(JSlider.HORIZONTAL, SLIDER_MIN, SLIDER_MAX, SLIDER_INIT);
         slider.setOpaque(false);
-        slider.setMajorTickSpacing(5); 
-        slider.setMinorTickSpacing(10); 
-        slider.setPaintTicks(true); 
-        slider.setSnapToTicks(false); 
+        slider.setMajorTickSpacing(5);
+        slider.setMinorTickSpacing(10);
+        slider.setPaintTicks(true);
+        slider.setSnapToTicks(false);
         slider.setPaintLabels(true);
         slider.setLabelTable(slider.createStandardLabels(10));
         slider.setPreferredSize(new Dimension(500,50));
@@ -137,29 +158,35 @@ public class GUI extends JFrame implements ActionListener, ChangeListener {
         periodLabel = new JLabel("T = ");
         periodLabel.setFont(plane);
 
-        seriesInput = new JLabel("F(x) = funkcja ktora podal uzytkownik");
+        seriesInput = new JLabel("F(x) = " + inputFunction);
         seriesInput.setFont(plane);
 
-        a0_label = new JLabel("a_0 = ");
+        //a0_label = new JLabel("a_0 = ");
         a0_label.setFont(plane);
 
-        an_label = new JLabel("a_n = ");
-        an_label.setFont(plane);
-
-        bn_label = new JLabel("b_n = ");
-        bn_label.setFont(plane);
 
         //czesc w ktorej ma byc to wszystko ulozone:
         inputPanel = new JPanel();
         inputPanel.setOpaque(false); //przezroczysty
         inputPanel.setPreferredSize(new Dimension(getWidth(), 65));
         inputPanel.setBorder(BorderFactory.createLineBorder(borderColor, 1));
-        
-        fxTextField = new JTextField();
+
+        fxTextField = new JEditorPane();
         fxTextField.setPreferredSize(new Dimension(((getWidth()) / 2) + 100, 50));
         fxTextField.setBorder(BorderFactory.createEtchedBorder(EtchedBorder.RAISED));
         fxTextField.setFont(plane_smaller);
-        
+
+        plotButton = new JButton("Plot");
+        plotButton.addActionListener(e -> {
+
+            inputFunction = getString(fxTextField);
+            periodText = periodTextField.getText();
+            graphPanel.counting(inputFunction);
+            graphPanel.szeregFouriera((inputFunction));
+            graphPanel.repaint();
+            seriesInput.setText("F(x) = " + inputFunction);
+            graphPanel.repaint();
+        });
         periodTextField = new JTextField();
         periodTextField.setPreferredSize(new Dimension((getWidth()) / 6, 50));
         periodTextField.setBorder(BorderFactory.createEtchedBorder(EtchedBorder.RAISED));
@@ -167,6 +194,7 @@ public class GUI extends JFrame implements ActionListener, ChangeListener {
 
         inputPanel.add(fxLabel);
         inputPanel.add(fxTextField);
+        inputPanel.add(plotButton);
         inputPanel.add(periodLabel);
         inputPanel.add(periodTextField);
 
@@ -179,34 +207,33 @@ public class GUI extends JFrame implements ActionListener, ChangeListener {
 
         sliderPanel = new JPanel();
         sliderPanel.setOpaque(false);
-        
+
         param1Panel = new JPanel();
         param1Panel.setOpaque(false);
         param1Panel.setLayout(new BorderLayout());
         param1Panel.add(sliderPanel, BorderLayout.SOUTH);
         sliderPanel.add(slider);
         slider.addChangeListener(new SliderChangeListener());
-        
+
         sliderTextField = new JTextField("0");
         sliderTextField.setFont(plane_smaller);
         sliderPanel.add(sliderTextField);
         sliderTextField.setPreferredSize(new Dimension(50,30));
         sliderTextField.setBorder(BorderFactory.createEtchedBorder(EtchedBorder.RAISED));
-        
+        System.out .println(periodText);
         seriesInput.setHorizontalAlignment(SwingConstants.CENTER);
         param1Panel.add(seriesInput, BorderLayout.CENTER);
-        
-        sliderTextField.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String text = sliderTextField.getText();
-                try {
-                    int value = Integer.parseInt(text);
-                    value = Math.max(SLIDER_MIN, Math.min(SLIDER_MAX, value));
-                    slider.setValue(value);
-                } catch (NumberFormatException ex) {
-                    System.err.println("Invalid input: " + text);
-                }
+
+        sliderTextField.addActionListener(e -> {
+            String text = sliderTextField.getText();
+            try {
+                int value = Integer.parseInt(text);
+                value = Math.max(SLIDER_MIN, Math.min(SLIDER_MAX, value));
+                n = value;
+                graphPanel.setN(n);
+                slider.setValue(value);
+            } catch (NumberFormatException ex) {
+                System.err.println("Invalid input: " + text);
             }
         });
 
@@ -214,26 +241,53 @@ public class GUI extends JFrame implements ActionListener, ChangeListener {
         param2Panel.setOpaque(false);
         param2Panel.setLayout(new GridLayout(3, 1));
         param2Panel.add(a0_label);
-        param2Panel.add(an_label);
-        param2Panel.add(bn_label);
         param2Panel.setPreferredSize(new Dimension(280, centerPanel.getHeight()));
 
         centerPanel.add(param1Panel, BorderLayout.CENTER);
         centerPanel.add(param2Panel, BorderLayout.EAST);
     }
 
+    public static void main(String[] args) {
+        GUI gui = new GUI();
+        gui.setVisible(true);
+    }
 
-	public class SliderChangeListener implements ChangeListener{
-		public void stateChanged(ChangeEvent arg0) {
-			String value = String.format("%d",slider.getValue());
-			sliderTextField.setText(value);
-		}
-	}
-	
+    public class SliderChangeListener implements ChangeListener{
+        public void stateChanged(ChangeEvent arg0) {
+            String value = String.format("%d",slider.getValue());
+            sliderTextField.setText(value);
+            n = slider.getValue();
+            graphPanel.setN(n);
+            inputFunction = getString(fxTextField);
+            periodText = periodTextField.getText();
+            graphPanel.counting(inputFunction);
+            graphPanel.szeregFouriera((inputFunction));
+            graphPanel.repaint();
+            seriesInput.setText("F(x) = " + inputFunction);
+            graphPanel.repaint();
+        }
+    }
 
 
+    public String getString(JEditorPane editorpane) {
+        String string = editorpane.getText();
+        return string;
+    }
+
+    public static String getPeriod(){
+        //System.out .println(periodText);
+        return periodText;
+    }
+
+    public static int getN(){
+        return n;
+    }
     public class GradientPanel extends JPanel {
-        public GradientPanel() {}
+
+        public GradientPanel() {
+
+        }
+
         @Override
         public void paintComponent(Graphics g) {
             super.paintComponent(g);
@@ -241,24 +295,22 @@ public class GUI extends JFrame implements ActionListener, ChangeListener {
             int w = getWidth();
             int h = getHeight();
             GradientPaint gp = new GradientPaint(
-                0, 0, gradientColor1, 0, h, gradientColor2);
+                    0, 0, gradientColor1, 0, h, gradientColor2);
             g2d.setPaint(gp);
             g2d.fillRect(0, 0, w, h);
         }
-        
-    }
-    
 
-	@Override
-	public void stateChanged(ChangeEvent e) {
-		// TODO Auto-generated method stub
     }
 
-	@Override
-	public void actionPerformed(ActionEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
-	
+    public static Color getColor1(){
+        return gradientColor1;
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        // TODO Auto-generated method stub
+
+    }
+
 
 }

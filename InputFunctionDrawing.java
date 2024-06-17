@@ -10,9 +10,8 @@ import java.util.List;
 import net.objecthunter.exp4j.Expression;
 import net.objecthunter.exp4j.ExpressionBuilder;
 import net.objecthunter.exp4j.tokenizer.UnknownFunctionOrVariableException;
-
 import javax.swing.*;
-import javax.swing.border.Border;
+
 
 import static pojava.projekt.GUI.a0_label;
 
@@ -28,6 +27,7 @@ public class InputFunctionDrawing extends JPanel {
 	public double period;
 	static int N;
 	Expression e;
+	JEditorPane fxTextField = GUI.fxTextField;
 
 	public InputFunctionDrawing() throws HeadlessException {
 		fValues = new ArrayList<>();
@@ -65,7 +65,7 @@ public class InputFunctionDrawing extends JPanel {
 		}
 	}
 
-	private boolean errorDisplayed = false;
+	boolean errorDisplayed = false;
 
 	public void counting(String input) {
 		fValues.clear();
@@ -91,14 +91,14 @@ public class InputFunctionDrawing extends JPanel {
 					fValues.add(result);
 					xValues.add(x);
 				} catch (ArithmeticException | IllegalArgumentException | IllegalStateException ex) {
-					JOptionPane.showMessageDialog(this, "Error evaluating expression: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-					break;
+					JOptionPane.showMessageDialog(this, "Function is not absolutely integrable.", "1Error", JOptionPane.ERROR_MESSAGE);
+					fxTextField.setText("");
 				}
 				xValue += step;
 			}
 		} catch (UnknownFunctionOrVariableException ex) {
-			JOptionPane.showMessageDialog(this, "Unknown function or variable: " + ex.getLocalizedMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-
+			JOptionPane.showMessageDialog(this, "Unknown function or variable: " + ex.getLocalizedMessage(), "2Error", JOptionPane.ERROR_MESSAGE);
+			fxTextField.setText("");
 		}
 	}
 
@@ -234,11 +234,13 @@ public class InputFunctionDrawing extends JPanel {
 				st += result1;
 
 			} catch (UnknownFunctionOrVariableException ex) {
-				JOptionPane.showMessageDialog(this, "Unknown function or variable: " + ex.getLocalizedMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-				break;
+				JOptionPane.showMessageDialog(this, "Unknown function or variable: " + ex.getLocalizedMessage(), "3Error", JOptionPane.ERROR_MESSAGE);
+				fxTextField.setText("");
+				reset();
 			} catch (ArithmeticException | IllegalArgumentException | IllegalStateException ex) {
-				JOptionPane.showMessageDialog(this, "Error evaluating expression: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-				break;
+				JOptionPane.showMessageDialog(this, "Error evaluating expression: " + ex.getMessage(), "4Error", JOptionPane.ERROR_MESSAGE);
+				fxTextField.setText("");
+				reset();;
 			}
 			s += result1;
 		}
@@ -253,52 +255,45 @@ public class InputFunctionDrawing extends JPanel {
 		double[] bn = new double[this.N + 1];
 		double a0 = wspolczynnik(input, 0, 0) / 2; // a0/2 term
 		boolean isAbsolutelyIntegrable = true;
-		errorDisplayed = false; // Reset error flag
+		errorDisplayed = false;
 
 		for (int i = 1; i <= this.N; i++) {
 			an[i] = wspolczynnik(input, i, 0);
 			bn[i] = wspolczynnik(input, i, 1);
 		}
-
-		// Clear the previous values
 		integralX.clear();
 		integralY.clear();
 
-		// Single loop to calculate Fourier series values
 		double xValue = 0;
 		try{
 			for (double x = 0; x < 10; x += 0.001) {
-				xValue %= period; // Ensure xValue stays within the range [0, period]
-
-				// Calculate Fourier series value at x
+				xValue %= period;
 				double y = a0;
 				for (int i = 1; i <= this.N; i++) {
 					y += an[i] * Math.cos(2 * i * Math.PI * xValue / period);
 					y += bn[i] * Math.sin(2 * i * Math.PI * xValue / period);
 				}
 
-				// Store the calculated values
 				integralX.add(x);
 				integralY.add(y);
 
-				// Increment xValue
 				xValue += 0.001;
 			}
 		} catch (Exception e) {
-			// Catch any other exceptions that might occur
 			isAbsolutelyIntegrable = false;
 			reset();
 		}
 
 		if (!isAbsolutelyIntegrable) {
 			JOptionPane.showMessageDialog(this, "Dirichlet condition unfulfilled: the function is not absolutely integrable.", "9Error", JOptionPane.ERROR_MESSAGE);
+			fxTextField.setText("");
 			reset();
 		} else {
 			a0_label.setText("a_0 = " + String.format("%.4f", wspolczynnik(input, 0, 0) / 2));
 		}
 	}
 
-	public void reset() { // raczej ostatecznie nie jest potrzebne do niczego
+	public void reset() {
 		fValues.clear();
 		xValues.clear();
 		an.clear();
